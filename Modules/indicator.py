@@ -160,7 +160,7 @@ def indicateur (df_freq, df_rect, lat, long):
             temps_acces_tot = temps_attente_moy + temps_marche
             EDF = 30/temps_acces_tot
             array_EDF = np.vstack((array_EDF, [route_id, EDF]))
-
+            
     df_EDF = pd.DataFrame(array_EDF[1:], columns=["route_id", "EDF"])
 
     if df_EDF.empty :
@@ -173,3 +173,48 @@ def indicateur (df_freq, df_rect, lat, long):
         EDF_max = df_EDF.iloc[-1]
         EDF_other = df_EDF[:-1].sum()
         return EDF_max + 0.5*EDF_other
+    
+def map_indicator(df_freq, coord_array) :
+    n,m = coord_array.shape
+    EDF_list = [[np.empty((1,2))]*m]*n
+    res = np.zeros((n, m))
+    lat_min, lat_max = coord_array[0,0,0], coord_array[n-1, 0, 0]
+    long_min, long_max = coord_array[0,0,1], coord_array[0, m-1, 1]
+    Delta_lat, Delta_long = lat_max-lat_min, long_max-long_min
+    d_lat, d_long = Delta_lat/n, Delta_long/m
+    R_case = max(d_lat, d_long)
+    i_close_cases, j_close_cases = int(marche_max/(6371*1e3)/np.sqrt(np.cos(lon*np.pi/180))/d_long)+1, int(marche_max/(6371*1e3)/d_lat)+1
+
+    for ind in df_freq.index :
+        stop_id, route_id, bus_per_hour, stop_lat, stop_long = df_freq.iloc[ind]
+        i, j = int((stop_long-long_min)/d_long), int((stop_lat-lat_min)/d_lat)
+        for d_i in range(-i_close_cases, +i_close_cases) :
+            for d_j in range(-j_close_cases, +j_close_cases) :
+                try :
+                    lat, long = coord_array[i+d_i, j+d_j]
+                    d = distance(lat,long, stop_lat, stop_long)
+                    if d < marche_max + R_case :
+                        temps_marche = d/75 #je suppose que la vitesse moyenne d'un humain c'est 4,5km/h soit 75metre/min
+                        temps_attente_moy = 0.5 * 60 / bus_per_hour
+                        temps_acces_tot = temps_attente_moy + temps_marche
+                        EDF = 30/temps_acces_tot
+                        EDF_list[i, j] = np.vstack((EDF_list[i, j], [route_id, EDF]))
+                except :
+                    pass
+        
+    for i in range(n):
+        for j in range(m):
+            EDF_array = EDF_list[i, j]
+            df_EDF = pd.DataFrame(array_EDF[1:], columns=["route_id", "EDF"])
+            if df_EDF.empty :
+                res[i, j] = 0
+            else :
+                df_EDF.sort_values("EDF", inplace=True)
+                df_EDF.drop_duplicates(["route_id"], keep = "last", inplace=True)
+                df_EDF.drop("route_id", axis=1, inplace=True)
+                df_EDF = df_EDF.astype(float)
+                EDF_max = df_EDF.iloc[-1]
+                EDF_other = df_EDF[:-1].sum()
+                res[i, j] = EDF_max + 0.5*EDF_other
+    
+    return res
