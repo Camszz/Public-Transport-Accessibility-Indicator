@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+pd.options.mode.chained_assignment = None  # default='warn'
 
 marche_max = 1500
 
@@ -89,8 +90,8 @@ def filter_stops(df_freq, rect_cdt, lat, lon) :
     i = ni2//2
     j = ni2//2
 
-    lat_min = lat - marche_max/(6371*1e3)
-    lat_max = lat + marche_max/(6371*1e3)
+    lat_min = lat - 180*marche_max/(6371*1e3)/np.pi
+    lat_max = lat + 180*marche_max/(6371*1e3)/np.pi
 
     while ni2-ni1 > 1 or nj2-nj1 > 1 :
         if filtered_lat.iloc[i] >= lat_min :
@@ -109,8 +110,8 @@ def filter_stops(df_freq, rect_cdt, lat, lon) :
     filtered_stops.sort_values("stop_lon", inplace=True)
     filtered_lon = filtered_stops["stop_lon"]
 
-    lon_min = lon - marche_max/(6371*1e3)/np.sqrt(np.cos(lon*np.pi/180))
-    lon_max = lon + marche_max/(6371*1e3)/np.sqrt(np.cos(lon*np.pi/180))
+    lon_min = lon - 180*marche_max/(6371*1e3)/np.sqrt(np.cos(lon*np.pi/180))/np.pi
+    lon_max = lon + 180*marche_max/(6371*1e3)/np.sqrt(np.cos(lon*np.pi/180))/np.pi
 
     ni1, ni2 = 0, len(filtered_stops)-1
     nj1, nj2 = 0, ni2
@@ -131,7 +132,6 @@ def filter_stops(df_freq, rect_cdt, lat, lon) :
         j = (nj1+nj2)//2+1
 
     filtered_stops = filtered_stops.iloc[ni1:nj2]
-
     return filtered_stops
 
 def indicateur (df_freq, df_rect, lat, long):
@@ -144,7 +144,8 @@ def indicateur (df_freq, df_rect, lat, long):
     Output : - EDF ie. fréquence d'accès au transports en commun."""
 
     rect_candidates = rect_retenus(df_rect, lat, long, marche_max)['route_id'] #calcul des rectangles retenus
-    filtered_stops = filter_stops(df_freq, rect_candidates, lat, long) #calcul des arrêts dont les latitudes sont acceptables. DataFrame triée par latitude croissante.
+    #filtered_stops = filter_stops(df_freq, rect_candidates, lat, long) #calcul des arrêts dont les latitudes sont acceptables. DataFrame triée par latitude croissante.
+    filtered_stops = filter_stops_by_rect(df_freq, rect_candidates)
 
     array_EDF = np.empty((1,2))
     n = len(filtered_stops)
@@ -175,36 +176,39 @@ def indicateur (df_freq, df_rect, lat, long):
         return EDF_max + 0.5*EDF_other
     
 def map_indicator(df_freq, coord_array) :
-    n,m = coord_array.shape
-    EDF_list = [[np.empty((1,2))]*m]*n
+    n,m, p = coord_array.shape
+    EDF_list = [[0 for k in range(m)] for j in range(n)]
+    for k in range(n) :
+        for j in range(m):
+            EDF_list[k][j] = np.empty((1, 2))
     res = np.zeros((n, m))
-    lat_min, lat_max = coord_array[0,0,0], coord_array[n-1, 0, 0]
+    lat_min, lat_max = coord_array[0,0,2], coord_array[n-1, 0, 2]
     long_min, long_max = coord_array[0,0,1], coord_array[0, m-1, 1]
     Delta_lat, Delta_long = lat_max-lat_min, long_max-long_min
     d_lat, d_long = Delta_lat/n, Delta_long/m
-    R_case = max(d_lat, d_long)
-    i_close_cases, j_close_cases = int(marche_max/(6371*1e3)/np.sqrt(np.cos(lon*np.pi/180))/d_long)+1, int(marche_max/(6371*1e3)/d_lat)+1
+    R_case = max(distance(lat_min, long_min, lat_min, long_min+d_long), distance(lat_min, long_min, lat_min+d_lat, long_min))
+    i_close_cases, j_close_cases = int(marche_max/(6371*1e3)/np.sqrt(np.cos(d_long*np.pi/180))/d_long)+1, int(marche_max/(6371*1e3)/d_lat)+1
 
     for ind in df_freq.index :
         stop_id, route_id, bus_per_hour, stop_lat, stop_long = df_freq.iloc[ind]
         i, j = int((stop_long-long_min)/d_long), int((stop_lat-lat_min)/d_lat)
-        for d_i in range(-i_close_cases, +i_close_cases) :
-            for d_j in range(-j_close_cases, +j_close_cases) :
+        for d_i in range(-i_close_cases, +i_close_cases+1) :
+            for d_j in range(-j_close_cases, +j_close_cases+1) :
                 try :
-                    lat, long = coord_array[i+d_i, j+d_j]
+                    inside, long, lat = coord_array[j+d_j, i+d_i]
                     d = distance(lat,long, stop_lat, stop_long)
-                    if d < marche_max + R_case :
+                    if d < marche_max and bus_per_hour != 0 and inside==1:
                         temps_marche = d/75 #je suppose que la vitesse moyenne d'un humain c'est 4,5km/h soit 75metre/min
                         temps_attente_moy = 0.5 * 60 / bus_per_hour
                         temps_acces_tot = temps_attente_moy + temps_marche
                         EDF = 30/temps_acces_tot
-                        EDF_list[i, j] = np.vstack((EDF_list[i, j], [route_id, EDF]))
+                        EDF_list[j+d_j][i+d_i] = np.vstack((EDF_list[j+d_j][i+d_i], [route_id, EDF]))
                 except :
                     pass
-        
+
     for i in range(n):
         for j in range(m):
-            EDF_array = EDF_list[i, j]
+            array_EDF = np.copy(EDF_list[i][j])
             df_EDF = pd.DataFrame(array_EDF[1:], columns=["route_id", "EDF"])
             if df_EDF.empty :
                 res[i, j] = 0

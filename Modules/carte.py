@@ -102,8 +102,3 @@ def carte():
     return(map_finale)
 
 carte()
-
-
-
-
-

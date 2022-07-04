@@ -16,7 +16,9 @@ rendu_final = np.zeros(ma_carte.shape)
 for i in range(0, rendu_final.shape[0], 20):
     for j in range(0, rendu_final.shape[1], 20):
         if ma_carte[i,j,0] == 1:
-            rendu_final[i,j] = indicator.indicateur(df_freq, df_rect, ma_carte[i,j,1], ma_carte[i,j,2])
+            rendu_final[i,j] = indicator.indicateur(df_freq, df_rect, ma_carte[i,j,2], ma_carte[i,j,1])
+print(rendu_final[::20, ::20])
 
-
-plt.imshow(rendu_final)
+plt.imshow(rendu_final[::20, ::20])
+plt.colorbar()
+plt.show()

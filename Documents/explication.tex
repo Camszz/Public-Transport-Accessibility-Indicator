@@ -72,8 +72,8 @@ Rappelons que la distance entre deux points $A$ et $B$ de l'espace en coordonné
 
 Ainsi, pour avoir un arrêt assez proche du point considéré, il faut en particulier qu'il soit aussi proche si les latitudes étaient égales et si les longitudes étaient égales. Ces considitions se traduisent au premier ordre - approximation justifiée par la distance de marche tolérée - par :
 \begin{itemize}
-    \item \textit{latitudes égales : } en faisant l'approximation des petits angles ($d \Phi << 1$), il vient naturellement comme condition : $|\Phi_{stop} - \Phi_{XY}| \leq d_{marche}/R_T$.
-    \item \textit{longitudes égales : } on développe la formule sus-citée avec $\Phi_A = \Phi_B$ et $d\lambda << 1$. On obtient : $d_{stop, XY} \approx \sqrt{\cos \Phi} |d\lambda|$.
+    \item \textit{latitudes égales : } en faisant l'approximation des petits angles ($d \Phi << 1$), il vient naturellement comme condition : $|\Phi^{rad}_{stop} - \Phi^{rad}_{XY}| \leq d_{marche}/R_T$. D'où : $|\Phi_{stop} - \Phi_{XY}| \leq 180 d_{marche}/\pi R_T$.
+    \item \textit{longitudes égales : } on développe la formule sus-citée avec $\Phi_A = \Phi_B$ et $d\lambda << 1$. On obtient : $d_{stop, XY} \approx \sqrt{\cos \Phi} |d\lambda^{rad}|$. D'où : $d_{stop, XY} \approx \pi \sqrt{\cos \Phi} |d\lambda|/180$
 \end{itemize}
 
 En triant la liste des arrêts (complexité $n \log n, \quad n = \text{nombre d'arrêts}$) par latitude croissante, on peut éliminer deux extrémités de la liste (qui ne vérifieraient pas la condition sur les latitudes) puis en triant la liste restante par longitude croissante on peut éliminer l'autre moitié de la liste (qui ne vérifieraient pas la condition sur les longitudes). Chaque étape "d'élimination" s'effectue par dichotomie (complexité $\log n$). Il reste ensuite à vérifier que les points restants ne sont pas seulement dans le carré de côté $d_{marche}$ centré en $(X, Y)$ mais qu'ils sont bien dans le cercle, ce qui est peu coûteux en complexité comparé au reste.

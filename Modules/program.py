@@ -2,7 +2,7 @@ import indicator
 import numpy as np
 import pandas as pd
 
-arr_coord = np.array([[45.777222, 3.087025]])
+arr_coord = np.array([[45.188529, 5.724524]])
 arr_EDF = np.empty((0))
 
 df_freq = pd.read_csv("freq.csv")
