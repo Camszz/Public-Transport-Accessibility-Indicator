@@ -1,0 +1,70 @@
+import indicator
+import numpy as np
+import pandas as pd
+import random as rd
+import time
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
+
+# df_freq = pd.read_csv("freq.csv")
+# df_rectangles = pd.read_csv("rectangles.csv")
+
+# def EDF_to_PTAL(EDF) :
+#     if EDF < 2.5 : PTAL = 0.8
+#     elif EDF < 5 : PTAL = 1.2
+#     elif EDF < 10 : PTAL = 2
+#     elif EDF < 15 : PTAL = 3
+#     elif EDF < 20 : PTAL = 4
+#     elif EDF < 25 : PTAL = 5
+#     elif EDF < 40 : PTAL = 5.8
+#     else : PTAL = 6.2
+#     return PTAL
+
+# len_array = [1, 3, 5, 10, 30, 100]
+# len_try = [10, 10, 5, 5, 3, 3]
+# array_exectimes = np.zeros((6, 2))
+# max_lat, min_lat, max_lon, min_lon = 46.4815, 44.0656, 7.1108, 2.0346
+# d_lat, d_lon = 46.4815-44.0656, 7.1108-2.0346
+
+# for n in range(6):
+#     tot_time = 0
+#     for t in range(len_try[n]) :
+#         arr_coords = np.array([[min_lat + d_lat * rd.uniform(0, 1), min_lon + d_lon * rd.uniform(0, 1)] for k in range(len_array[n])])
+#         arr_PTAL = np.empty((0))
+#         start_time = time.time()
+#         for coord in arr_coords:
+#             lat, long = coord[0], coord[1]
+#             EDF = indicator.indicateur(df_freq, df_rectangles, lat, long)
+#             PTAL = EDF_to_PTAL(EDF)
+#             arr_PTAL = np.append(arr_PTAL, PTAL)
+#         stop_time = time.time()
+#         tot_time += stop_time - start_time
+#     array_exectimes[n, 0] = len_array[n]
+#     array_exectimes[n, 1] = tot_time/len_try[n]
+
+# print(array_exectimes)
+# df = pd.DataFrame(array_exectimes, columns = ['n_coords', 'time']) 
+# df.to_csv("exectimes.csv")
+
+df = pd.read_csv("exectimes.csv")
+#créer un objet reg lin
+modeleReg=LinearRegression()
+
+#créer y et X
+list_var=df.columns.drop("time")
+y=df.time
+X=df[list_var]
+print(X, y)
+
+modeleReg.fit(X,y)
+print(modeleReg.intercept_)
+print(modeleReg.coef_)
+
+df.plot(x = 'n_coords', y = 'time', kind = 'scatter', marker = '.', label = 'Mesures exp')
+plt.plot(df["n_coords"], modeleReg.predict(X), color = 'red', label = 'Régression linéaire, pente = ' + str(modeleReg.coef_[0])[:4])
+plt.legend()
+plt.xlabel("Nombre de coordonnées")
+plt.ylabel('Time (sec)')
+plt.title("Graphique de temps d'exécution du programme en fonction du nombre de points calculés")
+plt.show()

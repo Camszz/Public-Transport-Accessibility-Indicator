@@ -14,20 +14,21 @@ sys.path.append(str(DIR))
 
 DATA_DIR = DIR / "DATA/"
 
-df_rect = pd.DataFrame(columns=["lat_max", "lon_max", "lat_min", "lon_min", "route_id"])
+# df_rect = pd.DataFrame(columns=["lat_max", "lon_max", "lat_min", "lon_min", "route_id", "agency_id"])
 
-for name in os.listdir(DATA_DIR):
-    try:
-        path = DATA_DIR / name
-        feed = gk.read_feed(path, dist_units="km")
-        df_rect = pd.concat([df_rect, rec.create_rectangles(feed)])
-    except:
-        pass
+# for name in os.listdir(DATA_DIR):
+#     print(name)
+#     try:
+#         path = DATA_DIR / name
+#         feed = gk.read_feed(path, dist_units="km")
+#         df_rect = pd.concat([df_rect, rec.create_rectangles(feed)])
+#     except:
+#         pass
 
-df_rect.to_csv(path_or_buf="rectangles.csv", index=False)
+# df_rect.to_csv(path_or_buf="rectangles.csv", index=False)
 
 df_freq = pd.DataFrame(
-    columns=["stop_id", "route_id", "bus_per_hour", "stop_lat", "stop_lon"]
+    columns=['agency_name', "stop_id", "route_id", "bus_per_hour", "stop_lat", "stop_lon"]
 )
 
 for name in os.listdir(DATA_DIR):
@@ -38,7 +39,8 @@ for name in os.listdir(DATA_DIR):
         df_stimes = feed.stop_times
         df_cal = feed.calendar
         df_stops = feed.stops
-        df_freq = pd.concat([df_freq, freq.freq(df_trips, df_stimes, df_stops, df_cal)])
+        df_agency = feed.agency
+        df_freq = pd.concat([df_freq, freq.freq(df_agency, df_trips, df_stimes, df_stops, df_cal)])
     except:
         pass
 
