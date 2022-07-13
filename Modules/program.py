@@ -29,4 +29,4 @@ for coord in arr_coord:
 
 df_coord['AI'] = arr_PTAL
 
-df_coord.to_csv('AI_'+name+'.csv', index = False)
+df_coord.to_csv('AI_'+name.split('.')[0]+'.csv', index = False)

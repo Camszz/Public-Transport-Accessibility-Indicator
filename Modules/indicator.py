@@ -207,7 +207,13 @@ def indicateur(df_freq, df_rect, lat, long):
         return (EDF_max + 0.5*EDF_other)[0]
     
 def map_indicator(df_freq, coord_array) :
-    """Fonction renvoyant un array d'EDF_totaux"""
+    """Fonction renvoyant un array d'EDF_totaux
+    
+    Input : - DataFrame de fréquences
+            - Tableau de coordonées
+    
+    Output : - Tableau des EDF correspondantes"""
+    
     n,m, p = coord_array.shape #on récupère les dimensions du tableau en entrée
     EDF_list = [[0 for k in range(m)] for j in range(n)] #et on initialise une liste de liste dans laquelle on mettra les DataFrame d'EDF
     notnull_array = np.zeros((n,m)) #ce tableau permettra de récupérer les cases non nulles pour ne pas avoir de complexité en n*m
